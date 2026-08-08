@@ -52,12 +52,28 @@ const QUICK_REQUESTS = [
   { group: 'Configuration', method: 'PUT', path: '/api/v1/configuration', label: 'Update configuration', consoleAuth: true, body: { DEFAULT_LATITUDE: 20.2961, DEFAULT_LONGITUDE: 85.8245, DEFAULT_COUNTRY_CODE: 'IN' } },
 ]
 
-const PRODUCTION_API_URL = 'https://mossaic-igyrquia.b4a.run'
+const PRODUCTION_API_URL = 'https://mossaic-8u5lx7ih.b4a.run'
 const LOCAL_API_URL = 'http://127.0.0.1:8000'
 
+function normalizeApiUrl(value, fallback = PRODUCTION_API_URL) {
+  let url = value?.trim()
+  if (!url) return fallback
+  if (url.startsWith('//')) url = `https:${url}`
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`
+
+  try {
+    const parsed = new URL(url)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return fallback
+    return `${parsed.origin}${parsed.pathname.replace(/\/$/, '') === '/' ? '' : parsed.pathname.replace(/\/$/, '')}`
+  } catch {
+    return fallback
+  }
+}
+
 function getInitialApiUrl() {
-  const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, '')
-  const savedUrl = localStorage.getItem('mosaic.baseUrl')?.trim().replace(/\/$/, '')
+  const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+  const savedValue = localStorage.getItem('mosaic.baseUrl')?.trim()
+  const savedUrl = savedValue ? normalizeApiUrl(savedValue) : ''
   const isLocalPage = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   const savedIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(savedUrl || '')
 
@@ -66,7 +82,9 @@ function getInitialApiUrl() {
     localStorage.removeItem('mosaic.baseUrl')
   }
 
-  return configuredUrl || (!isLocalPage && savedIsLocal ? PRODUCTION_API_URL : savedUrl) || (isLocalPage ? LOCAL_API_URL : PRODUCTION_API_URL)
+  return configuredUrl
+    ? normalizeApiUrl(configuredUrl)
+    : (!isLocalPage && savedIsLocal ? PRODUCTION_API_URL : savedUrl) || (isLocalPage ? LOCAL_API_URL : PRODUCTION_API_URL)
 }
 
 const initialConnection = {
@@ -541,7 +559,7 @@ function DeviceSetup({ connection, setConnection, config, consoleToken, setConfi
   const [form, setForm] = useState({ ...connection, latitude: defaults.DEFAULT_LATITUDE, longitude: defaults.DEFAULT_LONGITUDE, country: defaults.DEFAULT_COUNTRY_CODE })
   function update(event) { setForm({ ...form, [event.target.name]: event.target.value }) }
   async function submit(event) {
-    event.preventDefault(); const next = { baseUrl: form.baseUrl.replace(/\/$/, ''), deviceId: form.deviceId, token: form.token }; setConnection(next)
+    event.preventDefault(); const next = { baseUrl: normalizeApiUrl(form.baseUrl), deviceId: form.deviceId, token: form.token }; setConnection(next)
     Object.entries(next).forEach(([key, value]) => localStorage.setItem(`mosaic.${key}`, value))
     if (consoleToken) {
       try { const response = await fetch(`${next.baseUrl}/api/v1/configuration`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${consoleToken}` }, body: JSON.stringify({ DEFAULT_LATITUDE: Number(form.latitude), DEFAULT_LONGITUDE: Number(form.longitude), DEFAULT_COUNTRY_CODE: form.country.toUpperCase() }) }); if (response.ok) setConfig((await response.json()).data) } catch { /* connection settings remain saved locally */ }

@@ -11,7 +11,7 @@ npm run dev
 ```
 
 Local development defaults to `http://127.0.0.1:8000`. Hosted builds default to
-`https://mossaic-igyrquia.b4a.run`. The URL can also be changed from **Device
+`https://mossaic-8u5lx7ih.b4a.run`. The URL can also be changed from **Device
 setup** after opening the application.
 
 To use another backend on Vercel, add this project environment variable and
