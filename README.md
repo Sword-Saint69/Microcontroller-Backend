@@ -10,7 +10,18 @@ npm install
 npm run dev
 ```
 
-Set the backend URL from **Device setup** after opening the application.
+Local development defaults to `http://127.0.0.1:8000`. Hosted builds default to
+`https://mossaic-igyrquia.b4a.run`. The URL can also be changed from **Device
+setup** after opening the application.
+
+To use another backend on Vercel, add this project environment variable and
+redeploy:
+
+```text
+VITE_API_BASE_URL=https://your-api.example
+```
+
+Do not include a trailing slash or an API path such as `/api/v1`.
 
 ## Production build
 

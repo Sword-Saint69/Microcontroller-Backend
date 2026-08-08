@@ -52,8 +52,25 @@ const QUICK_REQUESTS = [
   { group: 'Configuration', method: 'PUT', path: '/api/v1/configuration', label: 'Update configuration', consoleAuth: true, body: { DEFAULT_LATITUDE: 20.2961, DEFAULT_LONGITUDE: 85.8245, DEFAULT_COUNTRY_CODE: 'IN' } },
 ]
 
+const PRODUCTION_API_URL = 'https://mossaic-igyrquia.b4a.run'
+const LOCAL_API_URL = 'http://127.0.0.1:8000'
+
+function getInitialApiUrl() {
+  const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, '')
+  const savedUrl = localStorage.getItem('mosaic.baseUrl')?.trim().replace(/\/$/, '')
+  const isLocalPage = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  const savedIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(savedUrl || '')
+
+  // A localhost API stored during development is unreachable from a hosted page.
+  if (!isLocalPage && savedIsLocal) {
+    localStorage.removeItem('mosaic.baseUrl')
+  }
+
+  return configuredUrl || (!isLocalPage && savedIsLocal ? PRODUCTION_API_URL : savedUrl) || (isLocalPage ? LOCAL_API_URL : PRODUCTION_API_URL)
+}
+
 const initialConnection = {
-  baseUrl: localStorage.getItem('mosaic.baseUrl') || 'http://127.0.0.1:8000',
+  baseUrl: getInitialApiUrl(),
   deviceId: localStorage.getItem('mosaic.deviceId') || 'ESP32_S3_TFT_001',
   token: localStorage.getItem('mosaic.token') || 'dev_token_123',
 }
